@@ -1,0 +1,18 @@
+/*
+ *  UART tester
+ *
+ *  Copyright (C) 2020, Hensoldt Cyber GmbH
+ *
+ */
+
+import <if_OS_BlockingWrite.camkes>;
+
+
+component UART_tester {
+    control;
+
+    uses      if_OS_BlockingWrite  uart_rpc;
+    dataport  Buf                  uart_input_port;   // incoming UART data
+    dataport  Buf                  uart_output_port;  // outgoing UART data
+    consumes  EventDataAvailable   uart_event;
+}

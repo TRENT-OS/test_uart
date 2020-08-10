@@ -1,0 +1,43 @@
+/*
+ *  ChanMux Test System
+ *
+ *  Copyright (C) 2020, Hensoldt Cyber GmbH
+ */
+
+import <std_connector.camkes>;
+
+#include "system_config.h"
+
+#include "UART/Uart.camkes"
+DECLARE_COMPONENT_UART(UART)
+
+import "uart_tester.camkes";
+
+assembly {
+    composition {
+
+        DECLARE_AND_CONNECT_INSTANCE_UART(UART, uartDrv)
+
+        component  UART_tester uart_tester;
+
+        connection  seL4RPCCall rpc(
+            from uart_tester.uart_rpc,
+            to   uartDrv.UartDrv);
+
+        connection  seL4SharedData  conn_input(
+            from uart_tester.uart_output_port,
+            to   uartDrv.Uart_inputDataport);
+
+        connection  seL4SharedData  conn_output(
+            from uartDrv.Uart_outputFifoDataport,
+            to   uart_tester.uart_input_port);
+
+        connection  seL4Notification conn_event(
+            from uartDrv.Uart_DataAvailable,
+            to   uart_tester.uart_event);
+
+    }
+    configuration {
+        CONFIGURE_INSTANCE_UART(uartDrv, CFG_UART_PHYS_ADDR, CFG_UART_INTR)
+    }
+}
