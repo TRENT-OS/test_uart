@@ -37,7 +37,7 @@ data_processor(
     test_ctx_t* ctx,
     const uint8_t data_byte)
 {
-    // dummy processing, volatile ensure the compiler can optimize this out
+    // Dummy processing, volatile ensures the compiler can't optimize this out.
 
     volatile uint8_t x = data_byte;
 
