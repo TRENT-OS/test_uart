@@ -7,16 +7,16 @@
 import <std_connector.camkes>;
 
 #include "system_config.h"
+#include "plat_system_config.h"
 
 #include "UART/Uart.camkes"
-DECLARE_COMPONENT_UART(UART)
 
 import "uart_tester.camkes";
 
 assembly {
     composition {
 
-        DECLARE_AND_CONNECT_INSTANCE_UART(UART, uartDrv)
+        component UART_IO uartDrv;
 
         component  UART_tester uart_tester;
 
@@ -36,8 +36,5 @@ assembly {
             from uartDrv.Uart_DataAvailable,
             to   uart_tester.uart_event);
 
-    }
-    configuration {
-        CONFIGURE_INSTANCE_UART(uartDrv, CFG_UART_PHYS_ADDR, CFG_UART_INTR)
     }
 }

@@ -31,15 +31,3 @@
 
 #define Memory_Config_USE_STDLIB_ALLOC
 
-
-//-----------------------------------------------------------------------------
-// UART
-//-----------------------------------------------------------------------------
-
-// zynq7000
-#define CFG_UART_PHYS_ADDR  0xe0000000
-#define CFG_UART_INTR       59
-
-// imx6
-// #define CFG_UART_PHYS_ADDR  0x02020000
-// #define CFG_UART_INTR       58

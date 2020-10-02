@@ -26,9 +26,7 @@ DeclareCAmkESComponent(
 )
 
 
-DeclareCAmkESComponent_UART(
-    UART
-)
+DeclareCAmkESComponents_for_UARTs()
 
 
 #ROOT SERVER
