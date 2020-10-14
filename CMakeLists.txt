@@ -1,5 +1,5 @@
 #
-# UART Test System
+# Test UART driver server
 #
 # Copyright (C) 2019-2020, Hensoldt Cyber GmbH
 #
