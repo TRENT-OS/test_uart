@@ -25,12 +25,12 @@ assembly {
             to   uartDrv.UartDrv);
 
         connection  seL4SharedData  conn_input(
-            from uart_tester.uart_output_port,
-            to   uartDrv.Uart_inputDataport);
+            from uartDrv.Uart_inputFifoDataport,
+            to   uart_tester.uart_input_port);
 
         connection  seL4SharedData  conn_output(
-            from uartDrv.Uart_outputFifoDataport,
-            to   uart_tester.uart_input_port);
+            from uart_tester.uart_output_port,
+            to   uartDrv.Uart_outputDataport);
 
         connection  seL4Notification conn_event(
             from uartDrv.Uart_DataAvailable,
