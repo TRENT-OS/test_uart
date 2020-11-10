@@ -16,6 +16,8 @@ import "uart_tester.camkes";
 assembly {
     composition {
 
+        // UART_IO is a define set in plat_system_config.h to choose the
+        // platform UART thatis used.
         component UART_IO uartDrv;
 
         component  UART_tester uart_tester;
