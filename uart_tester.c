@@ -205,7 +205,7 @@ do_run_test(void)
     // the last byte of the dataport holds an overflow flag
     volatile char* isFifoOverflow = (volatile char*)(
                                         (uintptr_t)buf_port
-                                        + OS_Dataport_getSize(in_port) - 1 );
+                                        + Uart_INPUT_FIFO_DATAPORT_SIZE - 1 );
 
     // don't allocate the buffer on the stack. Aligning with not specification
     // will use the largest alignment which is ever used for any data type on

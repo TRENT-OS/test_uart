@@ -10,8 +10,7 @@ import <std_connector.camkes>;
 #include "plat_system_config.h"
 
 #include "UART/Uart.camkes"
-
-import "uart_tester.camkes";
+#include "uart_tester.camkes";
 
 assembly {
     composition {
