@@ -250,7 +250,7 @@ ringbuffer_getReadPtr(
     assert( pos_head < self->capacity );
 
     const size_t len = ringbuffer_getCappedLen(self, pos_head, avail);
-    *ptr = (void*)( (uintptr_t)self->buffer + pos_head );
+    *ptr = &self->buffer[pos_head];
 
     return len;
 }
