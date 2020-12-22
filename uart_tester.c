@@ -61,6 +61,8 @@ do_process(
         &(ctx->data_window[1]),
         sizeof(ctx->data_window)-1 );
 
+    ctx->data_window[sizeof(ctx->data_window)-1] = data_byte;
+
     bool err = (data_byte != ctx->expecting_byte);
     if (err)
     {
