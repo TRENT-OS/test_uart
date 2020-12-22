@@ -24,7 +24,16 @@ ringbuffer_getCappedLen(
     size_t pos,
     size_t len)
 {
-    return (pos + len <= self->capacity) ? len : self->capacity - pos;
+    assert( NULL != self );
+
+    if (pos >= self->capacity)
+    {
+        assert( pos < self->capacity );
+        return 0;
+    }
+
+    size_t len_remaining = self->capacity - pos;
+    return (len > len_remaining) ? len_remaining : len;
 }
 
 
