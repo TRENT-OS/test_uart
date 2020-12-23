@@ -67,7 +67,8 @@ do_process(
     if (err)
     {
         Debug_LOG_ERROR(
-            "bytes processed: 0x%zx, expected 0x%02x, read 0x%02x, window:",
+            "bytes processed: 0x%zx (%zu), expected 0x%02x, read 0x%02x, window:",
+            ctx->bytes_processed,
             ctx->bytes_processed,
             ctx->expecting_byte,
             data_byte);
@@ -294,7 +295,11 @@ int run()
     Debug_LOG_DEBUG("run");
 
     OS_Error_t ret = do_run_test();
-    Debug_LOG_DEBUG("do_run() returned %d", ret);
+    if (OS_SUCCESS != ret)
+    {
+        Debug_LOG_ERROR("do_run_test() failed, code %d", ret);
+        return -1;
+    }
 
     return 0;
 }
