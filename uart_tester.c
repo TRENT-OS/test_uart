@@ -38,7 +38,6 @@ data_processor(
     const uint8_t data_byte)
 {
     // Dummy processing, volatile ensures the compiler can't optimize this out.
-
     volatile uint8_t x = data_byte;
 
     x = (x >> 1) | ((uint8_t)(x << 7));
@@ -46,7 +45,6 @@ data_processor(
     x |= ctx->byte_processor;
 
     ctx->byte_processor = x;
-
 }
 
 
@@ -267,7 +265,7 @@ do_run_test(void)
         OS_Error_t ret = process_data(&ctx);
         if (OS_SUCCESS != ret)
         {
-            Debug_LOG_ERROR("process_data() failed, code %d ", ret);
+            Debug_LOG_ERROR("process_data() failed, code %d", ret);
             return OS_ERROR_GENERIC;
         }
 

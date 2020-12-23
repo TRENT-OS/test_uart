@@ -38,6 +38,8 @@ ringbuffer_clear(
     self->head = 0;
     self->used = 0;
 }
+
+
 //------------------------------------------------------------------------------
 static inline size_t
 ringbuffer_getCapacity(
@@ -189,12 +191,12 @@ ringbuffer_read(
 {
     assert( NULL != self );
 
-    const size_t avail = self->used; // read only once to guarantee consistency
-    assert( avail <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
+    assert( used <= self->capacity );
 
-    if (len > avail)
+    if (len > used)
     {
-        len = avail;
+        len = used;
     }
 
     const size_t pos_head = self->head;
@@ -243,12 +245,12 @@ ringbuffer_getReadPtr(
     assert( NULL != self );
     assert( NULL != ptr );
 
-    const size_t avail = self->used; // read only once to guarantee consistency
-    assert( avail <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
+    assert( used <= self->capacity );
 
     const size_t pos_head = self->head;
     assert( pos_head < self->capacity );
 
     *ptr = &self->buffer[pos_head];
-    return ringbuffer_getCappedLen(self, pos_head, avail);
+    return ringbuffer_getCappedLen(self, pos_head, used);
 }
