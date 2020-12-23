@@ -56,10 +56,12 @@ ringbuffer_getUsed(
 {
     assert( NULL != self );
 
-    // sanity check
-    assert( self->used <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
 
-    return self->used;
+    // sanity check
+    assert( used <= self->capacity );
+
+    return used;
 }
 
 
@@ -70,10 +72,12 @@ ringbuffer_isEmpty(
 {
     assert( NULL != self );
 
-    // sanity check
-    assert( self->used <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
 
-    return (0 == self->used);
+    // sanity check
+    assert( used <= self->capacity );
+
+    return (0 == used);
 }
 
 
@@ -84,10 +88,12 @@ ringbuffer_getFree(
 {
     assert( NULL != self );
 
-    // sanity check
-    assert( self->used <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
 
-    return self->capacity - self->used;
+    // sanity check
+    assert( used <= self->capacity );
+
+    return self->capacity - used;
 }
 
 
@@ -98,10 +104,12 @@ ringbuffer_isFull(
 {
     assert( NULL != self );
 
-    // sanity check
-    assert( self->used <= self->capacity );
+    const size_t used = self->used; // read only once to guarantee consistency
 
-    return (self->capacity == self->used);
+    // sanity check
+    assert( used <= self->capacity );
+
+    return (self->capacity == used);
 }
 
 
