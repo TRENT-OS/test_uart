@@ -161,20 +161,17 @@ ringbuffer_write(
         const size_t pos_free = (pos_head + used) % self->capacity;
 
         const size_t len1 = ringbuffer_getCappedLen(self, pos_free, len);
-        if (len1 > 0)
+        assert(len1 > 0);
+        memcpy(&self->buffer[pos_free], src, len1);
+        if (len > len1)
         {
-            memcpy(&self->buffer[pos_free], src, len1);
-
-            const size_t len2 = len - len1;
-            if (len2 > 0)
-            {
-                memcpy(self->buffer, &((uint8_t*)src)[len1], len2);
-            }
-
-            // this does read-copy-write and thus it's not thread-safe
-            self->used += len;
-            assert( self->used <= self->capacity );
+            assert(pos_free + len1 == self->capacity);
+            memcpy(self->buffer, &((uint8_t*)src)[len1], len - len1);
         }
+
+        // this does read-copy-write and thus it's not thread-safe
+        self->used += len;
+        assert( self->used <= self->capacity );
     }
 
     return len;
@@ -199,25 +196,23 @@ ringbuffer_read(
         len = used;
     }
 
-    const size_t pos_head = self->head;
-
-    if (NULL != dst)
-    {
-        const size_t len1 = ringbuffer_getCappedLen(self, pos_head, len);
-        if (len1 > 0)
-        {
-            memcpy(dst, &self->buffer[pos_head], len1);
-
-            const size_t len2 = len - len1;
-            if (len2 > 0)
-            {
-                memcpy(&((uint8_t*)dst)[len1], self->buffer, len2);
-            }
-        }
-    }
-
     if (len > 0)
     {
+        const size_t pos_head = self->head;
+        assert( pos_head < self->capacity );
+
+        if (NULL != dst)
+        {
+            const size_t len1 = ringbuffer_getCappedLen(self, pos_head, len);
+            assert(len1 > 0);
+            memcpy(dst, &self->buffer[pos_head], len1);
+            if (len > len1)
+            {
+                assert(pos_head + len1 == self->capacity);
+                memcpy(&((uint8_t*)dst)[len1], self->buffer, len - len1);
+            }
+        }
+
         // self->capacity can't be 0 here, because len is greater 0
         assert( 0 != self->capacity );
         self->head = (pos_head + len) % self->capacity;
