@@ -6,9 +6,9 @@
 
 #include "OS_Error.h"
 #include "OS_Dataport.h"
-#include "LibIO/FifoDataport.h"
+#include "lib_io/FifoDataport.h"
 #include "ringbuffer.h"
-#include "LibDebug/Debug.h"
+#include "lib_debug/Debug.h"
 
 #include <camkes.h>
 
