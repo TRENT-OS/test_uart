@@ -238,9 +238,21 @@ ringbuffer_read(
 
 
 //------------------------------------------------------------------------------
+// flush data
+static inline size_t
+ringbuffer_flush(
+    ringbuffer_t* const self,
+    size_t len)
+{
+    return ringbuffer_read(self, NULL, len);
+}
+
+
+
+//------------------------------------------------------------------------------
 // get pointer within the FIFO with data to read, which allows doing zero-copy
-// operations. Call ringbuffer_read() with dst=NULL once the data has been
-// processed, so this part of the buffer can is marked as free again.
+// operations. Call ringbuffer_flush() once the data has been processed, so this
+// part of the buffer can is marked as free again.
 static inline size_t
 ringbuffer_getReadPtr(
     ringbuffer_t* const self,
