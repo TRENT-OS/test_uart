@@ -1,7 +1,7 @@
 /*
  *  Ring Buffer, not fully thread-safe
  *
- *  Copyright (C) 2020, Hensoldt Cyber GmbH
+ *  Copyright (C) 2020, HENSOLDT Cyber GmbH
  */
 
 #include <assert.h>

@@ -1,7 +1,7 @@
 /*
  *  Platform defaults for the i.MX6 Sabre Lite.
  *
- *  Copyright (C) 2020, Hensoldt Cyber GmbH
+ *  Copyright (C) 2020, HENSOLDT Cyber GmbH
  *
 */
 

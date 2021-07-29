@@ -1,7 +1,7 @@
 /*
  *  UART Test System
  *
- *  Copyright (C) 2020, Hensoldt Cyber GmbH
+ *  Copyright (C) 2020, HENSOLDT Cyber GmbH
  */
 
 import <std_connector.camkes>;
