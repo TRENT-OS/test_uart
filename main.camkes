@@ -29,9 +29,10 @@ assembly {
             uart_tester.uart_event)
 
     }
+
     configuration {
-       uartDrv.priority     = 101;
-       uart_tester.priority = 100; // Must be lower than uartDrv.
+        uartDrv.priority = 2;
+        uart_tester.priority = 1;
        sysctrl.priority     = 102;
     }
 }
