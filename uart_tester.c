@@ -1,7 +1,7 @@
 /*
  *  UART test
  *
- *  Copyright (C) 2020, HENSOLDT Cyber GmbH
+ *  Copyright (C) 2020-2022, HENSOLDT Cyber GmbH
  */
 
 #include "OS_Error.h"
@@ -14,25 +14,23 @@
 
 #include <string.h>
 
-// The internal FIFO size of the test app seems irrelevant with a FIFO of
-// slightly under 4 KiB in the dataport assuming the system is fast enough that
-// the UART baudrate is the limiting factor. Even on QEMU platforms that don't
-// respect baudrate setting at all and just pump in bulk data as fast as the
-// host can provide it, the FIFO in the dataport turns out to be the real
-// bottleneck. Using 64 or 8192 does not make much of a difference, any speed
-// improvements from larger values may just be caused by host system load
-// differences in the end.
-#define INTERNAL_FIFO_SIZE  2048
-
+//#define FIFO_PROFILING
 
 typedef struct {
     FifoDataport*  uart_fifo; // FIFO in dataport shared with the UART driver
     ringbuffer_t   rb; // internal FIFO
-    size_t         watermark;
     size_t         bytes_processed;
     uint8_t        byte_processor;
     uint8_t        expecting_byte;
     uint8_t        data_window[6];
+    // seems we need this internal FIFO on QEMU, as UART baudtrates are not
+    // guaranteed there. And besides throttling, data sometimes still comes
+    // faster than we can process it.
+    uint8_t        fifo_buffer[4096];
+#ifdef FIFO_PROFILING
+    size_t         fifo_read_cnt;
+    size_t         fifo_reads[128];
+#endif // FIFO_PROFILING
 } test_ctx_t;
 
 
@@ -93,6 +91,21 @@ do_process(
     if (0 == (ctx->bytes_processed % (64 * 1024)))
     {
         Debug_LOG_INFO("bytes processed: 0x%zx", ctx->bytes_processed);
+#ifdef FIFO_PROFILING
+        char buf[100] = { 0 };
+        size_t idx = 0;
+        while (idx < ctx->fifo_read_cnt)
+        {
+            int l = sprintf(buf, "avail[%3zu]:", idx);
+            while (idx < ctx->fifo_read_cnt)
+            {
+                l += sprintf(&buf[l], " %4zd", ctx->fifo_reads[idx++]);
+                if (0 == (idx & 0x7)) { break; }
+            }
+            Debug_LOG_INFO("%s", buf);
+        }
+        ctx->fifo_read_cnt = 0;
+#endif // FIFO_PROFILING
     }
 
     return err ? OS_ERROR_INVALID_STATE : OS_SUCCESS;
@@ -106,66 +119,25 @@ process_data(
 {
     ringbuffer_t* rb = &(ctx->rb);
 
-    // We have to balance things between reading data from the dataport FIFO
-    // and processing it. Options are:
-    // * prefer reading from the dataport into our internal FIFO to ensure the
-    //   FIFO in the dataport never fills up
-    // * process all available data as soon as it becomes available, so the
-    //   higher layers can consume them
-    // * something in the middle.
-    //
-    // The boost controls how much data is processed in one iteration. In
-    // general, we prefer draining the dataport FIFO into our internal FIFO over
-    // processing data. This ensures the dataport FIFO has space for new data
-    // and the hardware FIFO in the UART driver can be drained. However, when
-    // our internal FIFO is full, we prefer processing data over reading more
-    // data from the underlying FIFO. By default, we process 16 bytes per call,
-    // but this is just an arbitrary value just picked for the test.
-    size_t boost = 16;
-    size_t used = ringbuffer_getUsed(rb);
-    if (used > ctx->watermark)
+    // Get a contiguous buffer from the internal FIFO that we can pass on
+    // for processing. Since the FIFO can wrap around, there is no guarantee
+    // that we can get all available data in one contiguous buffer.
+    for(;;)
     {
-        // If our internal FIFO is filled above the watermark, then give
-        // processing of data a real boost and drain the it until the level
-        // falls below the watermark again. In general, if we are above the
-        // watermark level and we could copy less data from the UART driver
-        // dataport FIFO then there is available, there is the real danger of
-        // running into an overflow condition.
-        size_t boost2 = used - ctx->watermark;
-        // Debug_LOG_INFO("boost2 %zu", boost);
-        if (boost2 > boost)
-        {
-            boost = boost2;
-        }
-    }
-
-    while (boost > 0)
-    {
-        // Get a contiguous buffer from the internal FIFO that we can pass on
-        // for processing. Since the FIFO can wrap around, there is no guarantee
-        // that we can get all available data in one contiguous buffer. Thus we
-        // keep looping here as long as we can not read boost bytes or the
-        // internal buffer is empty.
         uint8_t* buffer = NULL;
         size_t len = ringbuffer_getReadPtr(rb, (void**)&buffer);
         if (0 == len)
         {
-            break;
+            return OS_SUCCESS;
         }
 
         assert(buffer); // We have data in the FIFO, so this can't be NULL.
-
-        if (len > boost)
+        for(size_t cnt_processed = 0; cnt_processed < len; cnt_processed++)
         {
-            // Debug_LOG_INFO("len %zu, boost %zu", len, boost);
-            len = boost;
-        }
-        boost -= len;
 
-        size_t cnt_processed;
-        for(cnt_processed = 0; cnt_processed < len; cnt_processed++)
-        {
-            OS_Error_t ret = do_process(ctx, buffer[cnt_processed]);
+            uint8_t data_byte = buffer[cnt_processed];
+            // call a dummy function to simulate processing load
+            OS_Error_t ret = do_process(ctx, data_byte);
             if (OS_SUCCESS != ret)
             {
                 Debug_LOG_ERROR("do_process() failed, code %d", ret);
@@ -190,26 +162,15 @@ process_data(
                 Debug_DUMP_ERROR(
                     ctx->uart_fifo->data,
                     FifoDataport_getCapacity(ctx->uart_fifo));
-                break;
+                return OS_ERROR_GENERIC;
             }
         }
 
-        // Flush processed data from the internal FIFO. Note that there is no
-        // gain if we do this after each byte, because the internal FIFO is not
-        // filled as long as we are looping here.
-        if (cnt_processed > 0)
-        {
-            ringbuffer_flush(rb, cnt_processed);
-        }
+        ringbuffer_flush(rb, len);
 
-        if (cnt_processed != len)
-        {
-            return OS_ERROR_GENERIC;
-        }
+    } // for(;;)
 
-    } // while (boost > 0);
-
-    return OS_SUCCESS;
+    UNREACHABLE();
 }
 
 
@@ -242,8 +203,9 @@ blocking_read(
         // set an internal flag that we check later
         if (!is_overflow && is_fifo_overflow(ctx))
         {
-            Debug_LOG_ERROR("dataport FIFO overflow detected");
             is_overflow = true;
+            Debug_LOG_ERROR("dataport FIFO overflow detected, %zu left to be read",
+                            FifoDataport_getSize(fifo));
         }
 
         // Try to read new data to drain the dataport FIFO.
@@ -262,6 +224,9 @@ blocking_read(
             }
 
             FifoDataport_remove(fifo, copied);
+#ifdef FIFO_PROFILING
+            ctx->fifo_reads[ctx->fifo_read_cnt++] = avail;
+#endif // FIFO_PROFILING
             return OS_SUCCESS;
         }
 
@@ -270,10 +235,6 @@ blocking_read(
         // the overflow is resolved.
         if (is_overflow)
         {
-            Debug_LOG_ERROR(
-                "dataport FIFO overflow detected, FIFO %zu, rb %zu",
-                FifoDataport_getSize(fifo),
-                ringbuffer_getUsed(rb) );
             // In a real application we should handle the overflow, but for the
             // test here it is considered fatal, as we expect things to be good
             // enough to never run into overflows.
@@ -309,21 +270,12 @@ do_run_test(void)
     OS_Dataport_t in_port = OS_DATAPORT_ASSIGN(uart_input_port);
     void* buf_port = OS_Dataport_getBuf(in_port);
 
-    test_ctx_t ctx = { 0 };
+    static test_ctx_t ctx = { 0 }; // don't use the stack
 
     ctx.uart_fifo = (FifoDataport*)buf_port;
 
     ringbuffer_t* rb = &(ctx.rb);
-
-    // Don't allocate the buffer on the stack and align it on a page boundary.
-    static uint8_t fifo_buffer[INTERNAL_FIFO_SIZE] __attribute__((aligned(4096)));
-    ringbuffer_init(rb, fifo_buffer, sizeof(fifo_buffer));
-
-    // If our internal FIFO is more than 75% filled, give processing of data a
-    // real boost and drain the FIFO until 75% capacity is available again.
-    const size_t capacity = ringbuffer_getCapacity(rb);
-    assert(capacity == sizeof(fifo_buffer));
-    ctx.watermark = (capacity / 2) + (capacity / 4);
+    ringbuffer_init(rb, ctx.fifo_buffer, sizeof(ctx.fifo_buffer));
 
     // test runner check for this string
     Debug_LOG_DEBUG("UART tester loop running");
