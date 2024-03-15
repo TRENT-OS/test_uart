@@ -30,9 +30,13 @@ DeclareCAmkESComponent(
         lib_io
 )
 
-
 DeclareCAmkESComponents_for_UARTs()
 
+if(("${KernelPlatform}" STREQUAL "tx1") OR ("${KernelPlatform}" STREQUAL "tx2") OR ("${KernelPlatform}" STREQUAL "xavier"))
+    SystemController_DeclareCAmkESComponent(
+        SystemController
+    )
+endif()
 
 #ROOT SERVER
 os_sdk_create_CAmkES_system("main.camkes")

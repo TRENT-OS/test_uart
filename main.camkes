@@ -10,16 +10,26 @@ import <std_connector.camkes>;
 #include "plat_system_config.h"
 
 #include "UART/Uart.camkes"
-#include "uart_tester.camkes";
+#include "uart_tester.camkes"
+
+#ifdef SYSCTRL_EXISTS
+#include "SystemController/SystemController.camkes"
+#endif
 
 assembly {
     composition {
 
         // UART_IO is a define set in plat_system_config.h to choose the
-        // platform UART thatis used.
+        // platform UART that is used.
         component UART_IO uartDrv;
 
         component  UART_tester uart_tester;
+
+        // TODO: make dependent from individual platform, as not every board (e.g. QEMU) requires clock initialization
+#ifdef SYSCTRL_EXISTS
+        component SystemController sysctrl;
+        connection seL4RPCCall con_sysctrl(from uartDrv.sysctrl_uart_client, to sysctrl.sysctrl_uart);
+#endif
 
         UART_INSTANCE_CONNECT_CLIENT(
             uartDrv,
@@ -27,10 +37,13 @@ assembly {
             uart_tester.uart_input_port,
             uart_tester.uart_output_port,
             uart_tester.uart_event)
-
     }
     configuration {
        uartDrv.priority     = 100;
-       uart_tester.priority = 101; // Must be lower than uartDrv.
+       uart_tester.priority = 102; // TODO: in general, must be lower than uartDrv, but this currently leads to problems.
+#ifdef SYSCTRL_EXISTS
+       sysctrl.priority     = 103;
+       sysctrl.sysctrl_bpmp_attributes = 101;
+#endif
     }
 }
